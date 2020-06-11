@@ -1,128 +1,27 @@
 [package]
-name = "tui"
-version = "0.9.5"
-authors = ["Florian Dehau <work@fdehau.com>"]
-description = """
-A library to build rich terminal user interfaces or dashboards
-"""
-documentation = "https://docs.rs/tui/0.9.5/tui/"
-keywords = ["tui", "terminal", "dashboard"]
-repository = "https://github.com/fdehau/tui-rs"
+name = "thw-subscriber"
+version = "0.1.0"
+authors = ["Cokemonkey11"]
+description = "Cool app"
 license = "MIT"
-exclude = ["assets/*", ".github"]
 autoexamples = true
 edition = "2018"
 
 [badges]
 
-[features]
-default = ["termion"]
-curses = ["easycurses", "pancurses"]
-
 [dependencies]
+tui = { version = "0.9.5", features = ["crossterm"]}
 bitflags = "1.0"
 cassowary = "0.3"
 itertools = "0.9"
 either = "1.5"
 unicode-segmentation = "1.2"
 unicode-width = "0.1"
-termion = { version = "1.5", optional = true }
-rustbox = { version = "0.11", optional = true }
-crossterm = { version = "0.17", optional = true }
-easycurses = { version = "0.12.2", optional = true }
-pancurses = { version = "0.16.1", optional = true, features = ["win32a"] }
+crossterm = "0.17"
 serde = { version = "1", "optional" = true, features = ["derive"]}
-
-[dev-dependencies]
 rand = "0.7"
 argh = "0.1"
 
 [[example]]
-name = "canvas"
-path = "examples/canvas.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "user_input"
-path = "examples/user_input.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "gauge"
-path = "examples/gauge.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "barchart"
-path = "examples/barchart.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "chart"
-path = "examples/chart.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "paragraph"
-path = "examples/paragraph.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "list"
-path = "examples/list.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "table"
-path = "examples/table.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "tabs"
-path = "examples/tabs.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "custom_widget"
-path = "examples/custom_widget.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "layout"
-path = "examples/layout.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "popup"
-path = "examples/popup.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "block"
-path = "examples/block.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "sparkline"
-path = "examples/sparkline.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "termion_demo"
-path = "examples/termion_demo.rs"
-required-features = ["termion"]
-
-[[example]]
-name = "rustbox_demo"
-path = "examples/rustbox_demo.rs"
-required-features = ["rustbox"]
-
-[[example]]
 name = "crossterm_demo"
 path = "examples/crossterm_demo.rs"
-required-features = ["crossterm"]
-
-[[example]]
-name = "curses_demo"
-path = "examples/curses_demo.rs"
-required-features = ["curses"]
