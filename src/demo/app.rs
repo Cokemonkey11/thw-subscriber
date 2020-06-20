@@ -1,66 +1,7 @@
 use crate::util::{RandomSignal, SinSignal, StatefulList, TabsState};
 
-const TASKS: [&str; 24] = [
-    "Item1", "Item2", "Item3", "Item4", "Item5", "Item6", "Item7", "Item8", "Item9", "Item10",
-    "Item11", "Item12", "Item13", "Item14", "Item15", "Item16", "Item17", "Item18", "Item19",
-    "Item20", "Item21", "Item22", "Item23", "Item24",
-];
-
-const LOGS: [(&str, &str); 26] = [
-    ("Event1", "INFO"),
-    ("Event2", "INFO"),
-    ("Event3", "CRITICAL"),
-    ("Event4", "ERROR"),
-    ("Event5", "INFO"),
-    ("Event6", "INFO"),
-    ("Event7", "WARNING"),
-    ("Event8", "INFO"),
-    ("Event9", "INFO"),
-    ("Event10", "INFO"),
-    ("Event11", "CRITICAL"),
-    ("Event12", "INFO"),
-    ("Event13", "INFO"),
-    ("Event14", "INFO"),
-    ("Event15", "INFO"),
-    ("Event16", "INFO"),
-    ("Event17", "ERROR"),
-    ("Event18", "ERROR"),
-    ("Event19", "INFO"),
-    ("Event20", "INFO"),
-    ("Event21", "WARNING"),
-    ("Event22", "INFO"),
-    ("Event23", "INFO"),
-    ("Event24", "WARNING"),
-    ("Event25", "INFO"),
-    ("Event26", "INFO"),
-];
-
-const EVENTS: [(&str, u64); 24] = [
-    ("B1", 9),
-    ("B2", 12),
-    ("B3", 5),
-    ("B4", 8),
-    ("B5", 2),
-    ("B6", 4),
-    ("B7", 5),
-    ("B8", 9),
-    ("B9", 14),
-    ("B10", 15),
-    ("B11", 1),
-    ("B12", 0),
-    ("B13", 4),
-    ("B14", 6),
-    ("B15", 4),
-    ("B16", 6),
-    ("B17", 4),
-    ("B18", 7),
-    ("B19", 13),
-    ("B20", 8),
-    ("B21", 11),
-    ("B22", 9),
-    ("B23", 3),
-    ("B24", 5),
-];
+use std::sync::mpsc;
+use std::time::{Duration, Instant};
 
 pub struct Signal<S: Iterator> {
     source: S,
@@ -103,14 +44,24 @@ pub struct Server<'a> {
     pub status: &'a str,
 }
 
+#[derive(Debug)]
+pub struct ThwDatum {
+    pub title: String,
+    pub description: String,
+    pub href: String,
+}
+
 pub struct App<'a> {
     pub title: &'a str,
     pub should_quit: bool,
     pub tabs: TabsState<'a>,
     pub show_chart: bool,
+    pub next_update: Instant, // seconds
     pub progress: f64,
+    pub refresh_sender: mpsc::Sender<()>,
+    pub results_receiver: mpsc::Receiver<ThwDatum>,
     pub sparkline: Signal<RandomSignal>,
-    pub tasks: StatefulList<&'a str>,
+    pub tasks: StatefulList<String>,
     pub logs: StatefulList<(&'a str, &'a str)>,
     pub signals: Signals,
     pub barchart: Vec<(&'a str, u64)>,
@@ -119,7 +70,12 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn new(title: &'a str, enhanced_graphics: bool) -> App<'a> {
+    pub fn new(
+        title: &'a str,
+        enhanced_graphics: bool,
+        refresh_sender: mpsc::Sender<()>,
+        results_receiver: mpsc::Receiver<ThwDatum>,
+    ) -> App<'a> {
         let mut rand_signal = RandomSignal::new(0, 100);
         let sparkline_points = rand_signal.by_ref().take(300).collect();
         let mut sin_signal = SinSignal::new(0.2, 3.0, 18.0);
@@ -129,16 +85,20 @@ impl<'a> App<'a> {
         App {
             title,
             should_quit: false,
-            tabs: TabsState::new(vec!["Tab0", "Tab1"]),
+            tabs: TabsState::new(vec!["New posts", "Favorites"]),
             show_chart: true,
+            next_update: Instant::now() + Duration::from_secs(60),
             progress: 0.0,
+            refresh_sender,
+            results_receiver,
             sparkline: Signal {
                 source: rand_signal,
                 points: sparkline_points,
                 tick_rate: 1,
             },
-            tasks: StatefulList::with_items(TASKS.to_vec()),
-            logs: StatefulList::with_items(LOGS.to_vec()),
+            tasks: StatefulList::with_items(vec!["hello".into()]),
+            logs: StatefulList::new(),
+
             signals: Signals {
                 sin1: Signal {
                     source: sin_signal,
@@ -152,7 +112,7 @@ impl<'a> App<'a> {
                 },
                 window: [0.0, 20.0],
             },
-            barchart: EVENTS.to_vec(),
+            barchart: vec![],
             servers: vec![
                 Server {
                     name: "NorthAmerica-1",
@@ -212,19 +172,22 @@ impl<'a> App<'a> {
     }
 
     pub fn on_tick(&mut self) {
-        // Update progress
-        self.progress += 0.001;
-        if self.progress > 1.0 {
+        self.progress =
+            (Instant::now() - (self.next_update - Duration::from_secs(60))).as_secs() as f64 / 60.0;
+        if self.progress >= 1.0 {
+            self.next_update = Instant::now() + Duration::from_secs(60);
             self.progress = 0.0;
+            self.refresh_sender
+                .send(())
+                .expect("Failed to send a refresh");
+        }
+
+        let new_res = self.results_receiver.try_recv();
+        if let Ok(res) = new_res {
+            self.tasks.items.push(res.title);
         }
 
         self.sparkline.on_tick();
         self.signals.on_tick();
-
-        let log = self.logs.items.pop().unwrap();
-        self.logs.items.insert(0, log);
-
-        let event = self.barchart.pop().unwrap();
-        self.barchart.insert(0, event);
     }
 }

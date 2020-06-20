@@ -3,13 +3,16 @@ mod demo;
 #[allow(dead_code)]
 mod util;
 
-use crate::demo::{ui, App};
+use crate::demo::{ui, App, ThwDatum};
 use argh::FromArgs;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use select::document::Document;
+use select::predicate::{Class, Predicate};
+
 use std::{
     error::Error,
     io::{stdout, Write},
@@ -52,23 +55,65 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (tx, rx) = mpsc::channel();
 
     let tick_rate = Duration::from_millis(cli.tick_rate);
-    thread::spawn(move || {
+    let handle_in = thread::spawn(move || {
         let mut last_tick = Instant::now();
         loop {
             // poll for tick rate duration, if no events, sent tick event.
-            if event::poll(tick_rate - last_tick.elapsed()).unwrap() {
-                if let CEvent::Key(key) = event::read().unwrap() {
-                    tx.send(Event::Input(key)).unwrap();
+            if event::poll(tick_rate - last_tick.elapsed()).expect("failed to poll tickrate") {
+                if let CEvent::Key(key) = event::read().expect("failed to read event") {
+                    tx.send(Event::Input(key))
+                        .expect("failed to send on channel");
                 }
             }
             if last_tick.elapsed() >= tick_rate {
-                tx.send(Event::Tick).unwrap();
+                tx.send(Event::Tick)
+                    .expect("failed to send tick on channel");
                 last_tick = Instant::now();
             }
         }
     });
 
-    let mut app = App::new("Crossterm Demo", cli.enhanced_graphics);
+    let (refresh_tx, refresh_rx) = mpsc::channel();
+    let (results_tx, results_rx) = mpsc::channel();
+
+    let tx_clone = refresh_tx.clone();
+    tx_clone.send(()).expect("Failed to send initial unit");
+
+    let mut app = App::new(
+        "THW Subscriber",
+        cli.enhanced_graphics,
+        refresh_tx,
+        results_rx,
+    );
+
+    let handle = thread::spawn(move || loop {
+        match refresh_rx.recv() {
+            Ok(()) => {
+                let body = ureq::get("https://www.hiveworkshop.com/find-new/posts")
+                    .call()
+                    .into_string()
+                    .expect("Failed to fetch");
+                Document::from(&body[..])
+                    .find(Class("title").descendant(Class("PreviewTooltip")))
+                    .map(|node| {
+                        (
+                            node.attr("href").expect("node didn't have href").into(),
+                            node.text(),
+                        )
+                    })
+                    .for_each(|(href, title)| {
+                        results_tx
+                            .send(ThwDatum {
+                                title,
+                                description: "yet another low-effort post".into(),
+                                href,
+                            })
+                            .expect("failed to send test datum");
+                    });
+            }
+            Err(e) => panic!("{:?} {:?}", e, e.to_string()),
+        }
+    });
 
     terminal.clear()?;
 
@@ -101,6 +146,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             break;
         }
     }
+
+    handle.join().expect("failed to join thread");
+    handle_in.join().expect("failed to join handle-in");
 
     Ok(())
 }
