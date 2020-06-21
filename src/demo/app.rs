@@ -172,9 +172,9 @@ impl<'a> App<'a> {
             't' => {
                 self.show_chart = !self.show_chart;
             }
-            'c' => match self.tasks.state.selected() {
-                Some(idx) => {
-                    let mut cb: Result<ClipboardContext, Box<dyn Error>> = ClipboardProvider::new();
+            'c' => {
+                if let Some(idx) = self.tasks.state.selected() {
+                    let cb: Result<ClipboardContext, Box<dyn Error>> = ClipboardProvider::new();
                     match cb {
                         Ok(mut cb) => {
                             cb.set_contents(
@@ -189,12 +189,11 @@ impl<'a> App<'a> {
                             .expect("failed to set clipboard");
                         }
                         Err(e) => {
-                            self.errors.push(format!("{:?}", e));
+                            self.errors.push(format!("{:?} - {:?}\n", e, e.to_string()));
                         }
                     }
                 }
-                _ => (),
-            },
+            }
             _ => {}
         }
     }

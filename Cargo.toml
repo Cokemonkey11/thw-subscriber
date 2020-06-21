@@ -25,7 +25,3 @@ crossterm = "0.17"
 serde = { version = "1", "optional" = true, features = ["derive"]}
 rand = "0.7"
 argh = "0.1"
-
-[[example]]
-name = "crossterm_demo"
-path = "examples/crossterm_demo.rs"

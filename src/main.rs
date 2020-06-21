@@ -6,7 +6,7 @@ mod util;
 use crate::demo::{ui, App, ThwDatum};
 use argh::FromArgs;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
+    event::{self, DisableMouseCapture, Event as CEvent, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };

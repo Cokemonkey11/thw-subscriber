@@ -79,7 +79,7 @@ where
             .iter()
             .rev()
             .map(|dat| format!("{} :: {}", dat.forum, dat.title))
-            .map(|i| Text::raw(i));
+            .map(Text::raw);
         let tasks = List::new(tasks)
             .block(Block::default().borders(Borders::ALL).title("Topics"))
             .highlight_style(Style::default().fg(Color::Yellow).modifier(Modifier::BOLD))
@@ -108,7 +108,7 @@ where
             _ => vec!["Select a thread with the arrow keys".into()],
         }
         .into_iter()
-        .map(|str| Text::raw(str))
+        .map(Text::raw)
         .collect(),
         _ => app
             .errors
