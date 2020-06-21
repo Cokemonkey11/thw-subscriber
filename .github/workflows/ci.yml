@@ -24,22 +24,6 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --examples
-      - name: "Check (crossterm)"
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --no-default-features --features=crossterm --example crossterm_demo
-      - name: "Check (rustbox)"
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --no-default-features --features=rustbox --example rustbox_demo
-      - name: "Check (curses)"
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --no-default-features --features=curses --example curses_demo
       - name: "Test"
         uses: actions-rs/cargo@v1
         with:
@@ -63,9 +47,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --no-default-features --features=crossterm --example crossterm_demo
       - name: "Test (crossterm)"
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-default-features --features=crossterm --tests --examples
