@@ -154,7 +154,9 @@ impl<'a> App<'a> {
                 "Skins",
                 "Something Else",
                 "Medivh's Tower",
-                "Modeling & Animation"
+                "Modeling & Animation",
+                "Requests",
+                "The Legends of Arkain Series",
             ]
             .into_iter()
             .map(|s| s.into())
