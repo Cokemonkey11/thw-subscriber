@@ -10,6 +10,8 @@ edition = "2018"
 [badges]
 
 [dependencies]
+clipboard = "0.5"
+indexmap = "1.4"
 select = "0.4.3"
 tui = { version = "0.9.5", features = ["crossterm"]}
 bitflags = "1.0"

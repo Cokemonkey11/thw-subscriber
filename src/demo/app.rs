@@ -1,7 +1,10 @@
 use crate::util::{RandomSignal, SinSignal, StatefulList, TabsState};
 
+use std::error::Error;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
+
+use clipboard::{ClipboardContext, ClipboardProvider};
 
 pub struct Signal<S: Iterator> {
     source: S,
@@ -44,10 +47,10 @@ pub struct Server<'a> {
     pub status: &'a str,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct ThwDatum {
     pub title: String,
-    pub description: String,
+    pub forum: String,
     pub href: String,
 }
 
@@ -61,12 +64,13 @@ pub struct App<'a> {
     pub refresh_sender: mpsc::Sender<()>,
     pub results_receiver: mpsc::Receiver<ThwDatum>,
     pub sparkline: Signal<RandomSignal>,
-    pub tasks: StatefulList<String>,
+    pub tasks: StatefulList<ThwDatum>,
     pub logs: StatefulList<(&'a str, &'a str)>,
     pub signals: Signals,
     pub barchart: Vec<(&'a str, u64)>,
     pub servers: Vec<Server<'a>>,
     pub enhanced_graphics: bool,
+    pub errors: Vec<String>,
 }
 
 impl<'a> App<'a> {
@@ -96,7 +100,7 @@ impl<'a> App<'a> {
                 points: sparkline_points,
                 tick_rate: 1,
             },
-            tasks: StatefulList::with_items(vec!["hello".into()]),
+            tasks: StatefulList::new(),
             logs: StatefulList::new(),
 
             signals: Signals {
@@ -140,6 +144,7 @@ impl<'a> App<'a> {
                 },
             ],
             enhanced_graphics,
+            errors: vec![],
         }
     }
 
@@ -167,6 +172,29 @@ impl<'a> App<'a> {
             't' => {
                 self.show_chart = !self.show_chart;
             }
+            'c' => match self.tasks.state.selected() {
+                Some(idx) => {
+                    let mut cb: Result<ClipboardContext, Box<dyn Error>> = ClipboardProvider::new();
+                    match cb {
+                        Ok(mut cb) => {
+                            cb.set_contents(
+                                self.tasks
+                                    .items
+                                    .iter()
+                                    .nth(idx)
+                                    .expect("Failed to get nth item")
+                                    .href
+                                    .clone(),
+                            )
+                            .expect("failed to set clipboard");
+                        }
+                        Err(e) => {
+                            self.errors.push(format!("{:?}", e));
+                        }
+                    }
+                }
+                _ => (),
+            },
             _ => {}
         }
     }
@@ -184,7 +212,7 @@ impl<'a> App<'a> {
 
         let new_res = self.results_receiver.try_recv();
         if let Ok(res) = new_res {
-            self.tasks.items.push(res.title);
+            self.tasks.items.insert(res);
         }
 
         self.sparkline.on_tick();

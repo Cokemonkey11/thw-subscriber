@@ -5,6 +5,9 @@ use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
 use tui::widgets::ListState;
 
+use indexmap::IndexSet;
+use std::hash::Hash;
+
 #[derive(Clone)]
 pub struct RandomSignal {
     distribution: Uniform<u64>,
@@ -79,21 +82,24 @@ impl<'a> TabsState<'a> {
 
 pub struct StatefulList<T> {
     pub state: ListState,
-    pub items: Vec<T>,
+    pub items: IndexSet<T>,
 }
 
-impl<T> StatefulList<T> {
+impl<T> StatefulList<T>
+where
+    T: Eq + Hash,
+{
     pub fn new() -> StatefulList<T> {
         StatefulList {
             state: ListState::default(),
-            items: Vec::new(),
+            items: IndexSet::new(),
         }
     }
 
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
         StatefulList {
             state: ListState::default(),
-            items,
+            items: items.into_iter().collect(),
         }
     }
 

@@ -60,7 +60,7 @@ where
         .constraints([Constraint::Min(11), Constraint::Length(7)].as_ref())
         .split(area);
     draw_charts(f, app, chunks[0]);
-    draw_text(f, chunks[1]);
+    draw_text(f, chunks[1], app);
 }
 
 fn draw_charts<B>(f: &mut Frame<B>, app: &mut App, area: Rect)
@@ -73,40 +73,53 @@ where
         .split(area);
     {
         // Draw tasks
-        let tasks = app.tasks.items.iter().map(|i| Text::raw(i));
+        let tasks = app
+            .tasks
+            .items
+            .iter()
+            .rev()
+            .map(|dat| format!("{} :: {}", dat.forum, dat.title))
+            .map(|i| Text::raw(i));
         let tasks = List::new(tasks)
-            .block(Block::default().borders(Borders::ALL).title("List"))
+            .block(Block::default().borders(Borders::ALL).title("Topics"))
             .highlight_style(Style::default().fg(Color::Yellow).modifier(Modifier::BOLD))
             .highlight_symbol("> ");
         f.render_stateful_widget(tasks, chunks[0], &mut app.tasks.state);
     }
 }
 
-fn draw_text<B>(f: &mut Frame<B>, area: Rect)
+// Footer
+fn draw_text<B>(f: &mut Frame<B>, area: Rect, app: &mut App)
 where
     B: Backend,
 {
-    let text = [
-        Text::raw("This is a paragraph with several lines. You can change style your text the way you want.\n\nFox example: "),
-        Text::styled("under", Style::default().fg(Color::Red)),
-        Text::raw(" "),
-        Text::styled("the", Style::default().fg(Color::Green)),
-        Text::raw(" "),
-        Text::styled("rainbow", Style::default().fg(Color::Blue)),
-        Text::raw(".\nOh and if you didn't "),
-        Text::styled("notice", Style::default().modifier(Modifier::ITALIC)),
-        Text::raw(" you can "),
-        Text::styled("automatically", Style::default().modifier(Modifier::BOLD)),
-        Text::raw(" "),
-        Text::styled("wrap", Style::default().modifier(Modifier::REVERSED)),
-        Text::raw(" your "),
-        Text::styled("text", Style::default().modifier(Modifier::UNDERLINED)),
-        Text::raw(".\nOne more thing is that it should display unicode characters: 10€")
-    ];
+    let text: Vec<Text> = match app.errors.len() {
+        0 => match app.tasks.state.selected() {
+            Some(idx) => vec![app
+                .tasks
+                .items
+                .iter()
+                .nth(idx)
+                .map(|thw| thw.href.clone())
+                .expect("task not present")]
+            .into_iter()
+            .map(|href| format!("https://www.hiveworkshop.com/{}", href))
+            .collect(),
+            _ => vec!["Select a thread with the arrow keys".into()],
+        }
+        .into_iter()
+        .map(|str| Text::raw(str))
+        .collect(),
+        _ => app
+            .errors
+            .iter()
+            .map(|str| Text::styled(str, Style::new().bg(Color::Magenta)))
+            .collect(),
+    };
+
     let block = Block::default()
         .borders(Borders::ALL)
-        .title("Footer")
-        .title_style(Style::default().fg(Color::Magenta).modifier(Modifier::BOLD));
+        .border_style(Style::new().modifier(Modifier::HIDDEN));
     let paragraph = Paragraph::new(text.iter()).block(block).wrap(true);
     f.render_widget(paragraph, area);
 }

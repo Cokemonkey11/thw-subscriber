@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     enable_raw_mode()?;
 
     let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen, DisableMouseCapture)?;
 
     let backend = CrosstermBackend::new(stdout);
 
@@ -94,20 +94,29 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .into_string()
                     .expect("Failed to fetch");
                 Document::from(&body[..])
-                    .find(Class("title").descendant(Class("PreviewTooltip")))
+                    .find(Class("titleText"))
                     .map(|node| {
+                        let title = node
+                            .find(Class("title").descendant(Class("PreviewTooltip")))
+                            .next()
+                            .expect("missing title");
+                        let second_row = node
+                            .find(Class("secondRow").descendant(Class("forumLink")))
+                            .next()
+                            .expect("missing forum");
+
                         (
-                            node.attr("href").expect("node didn't have href").into(),
-                            node.text(),
+                            title.attr("href").expect("node didn't have href").into(),
+                            title.text(),
+                            second_row.text(),
                         )
                     })
-                    .for_each(|(href, title)| {
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .rev()
+                    .for_each(|(href, title, forum)| {
                         results_tx
-                            .send(ThwDatum {
-                                title,
-                                description: "yet another low-effort post".into(),
-                                href,
-                            })
+                            .send(ThwDatum { title, forum, href })
                             .expect("failed to send test datum");
                     });
             }
