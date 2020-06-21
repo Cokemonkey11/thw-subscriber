@@ -71,6 +71,7 @@ pub struct App<'a> {
     pub servers: Vec<Server<'a>>,
     pub enhanced_graphics: bool,
     pub errors: Vec<String>,
+    pub filters: Vec<String>,
 }
 
 impl<'a> App<'a> {
@@ -89,7 +90,7 @@ impl<'a> App<'a> {
         App {
             title,
             should_quit: false,
-            tabs: TabsState::new(vec!["New posts", "Favorites"]),
+            tabs: TabsState::new(vec!["New posts", "Filters"]),
             show_chart: true,
             next_update: Instant::now() + Duration::from_secs(60),
             progress: 0.0,
@@ -145,11 +146,32 @@ impl<'a> App<'a> {
             ],
             enhanced_graphics,
             errors: vec![],
+            filters: vec![
+                "Maps",
+                "Models",
+                "Site Discussion",
+                "Multiplayer LFG",
+                "Skins",
+                "Something Else",
+            ]
+            .into_iter()
+            .map(|s| s.into())
+            .collect(),
         }
     }
 
     pub fn on_up(&mut self) {
         self.tasks.previous();
+    }
+
+    pub fn get_uri(&mut self) -> Option<String> {
+        self.tasks.state.selected().and_then(|idx| {
+            self.tasks
+                .items
+                .iter()
+                .nth(idx)
+                .map(|thw| format!("https://www.hiveworkshop.com/{}", thw.href))
+        })
     }
 
     pub fn on_down(&mut self) {
@@ -173,20 +195,11 @@ impl<'a> App<'a> {
                 self.show_chart = !self.show_chart;
             }
             'c' => {
-                if let Some(idx) = self.tasks.state.selected() {
+                if let Some(uri) = self.get_uri() {
                     let cb: Result<ClipboardContext, Box<dyn Error>> = ClipboardProvider::new();
                     match cb {
                         Ok(mut cb) => {
-                            cb.set_contents(
-                                self.tasks
-                                    .items
-                                    .iter()
-                                    .nth(idx)
-                                    .expect("Failed to get nth item")
-                                    .href
-                                    .clone(),
-                            )
-                            .expect("failed to set clipboard");
+                            cb.set_contents(uri).expect("failed to set clipboard");
                         }
                         Err(e) => {
                             self.errors.push(format!("{:?} - {:?}\n", e, e.to_string()));
@@ -211,7 +224,9 @@ impl<'a> App<'a> {
 
         let new_res = self.results_receiver.try_recv();
         if let Ok(res) = new_res {
-            self.tasks.items.insert(res);
+            if !self.filters.contains(&res.forum) {
+                self.tasks.items.insert(res);
+            }
         }
 
         self.sparkline.on_tick();

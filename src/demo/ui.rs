@@ -2,8 +2,6 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    symbols,
-    widgets::canvas::{Canvas, Line, Map, MapResolution, Rectangle},
     widgets::{Block, Borders, Gauge, List, Paragraph, Row, Table, Tabs, Text},
     Frame,
 };
@@ -77,7 +75,6 @@ where
             .tasks
             .items
             .iter()
-            .rev()
             .map(|dat| format!("{} :: {}", dat.forum, dat.title))
             .map(Text::raw);
         let tasks = List::new(tasks)
@@ -94,22 +91,11 @@ where
     B: Backend,
 {
     let text: Vec<Text> = match app.errors.len() {
-        0 => match app.tasks.state.selected() {
-            Some(idx) => vec![app
-                .tasks
-                .items
-                .iter()
-                .nth(idx)
-                .map(|thw| thw.href.clone())
-                .expect("task not present")]
-            .into_iter()
-            .map(|href| format!("https://www.hiveworkshop.com/{}", href))
-            .collect(),
-            _ => vec!["Select a thread with the arrow keys".into()],
+        0 => {
+            vec![Text::raw(app.get_uri().unwrap_or_else(|| {
+                "Select a thread with the arrow keys".into()
+            }))]
         }
-        .into_iter()
-        .map(Text::raw)
-        .collect(),
         _ => app
             .errors
             .iter()
@@ -121,81 +107,38 @@ where
         .borders(Borders::ALL)
         .border_style(Style::new().modifier(Modifier::HIDDEN));
     let paragraph = Paragraph::new(text.iter()).block(block).wrap(true);
-    f.render_widget(paragraph, area);
+
+    let chunks = Layout::default()
+        .constraints([Constraint::Min(40), Constraint::Length(10)].as_ref())
+        .direction(Direction::Horizontal)
+        .split(area);
+    f.render_widget(paragraph, chunks[0]);
+
+    let legend_text = vec![
+        Text::styled("Q", Style::new().modifier(Modifier::UNDERLINED)),
+        Text::raw("uit\n"),
+        Text::styled("C", Style::new().modifier(Modifier::UNDERLINED)),
+        Text::raw("opy url\n"),
+    ];
+    let legend = Paragraph::new(legend_text.iter()).block(Block::default().borders(Borders::ALL));
+    f.render_widget(legend, chunks[1]);
 }
 
 fn draw_second_tab<B>(f: &mut Frame<B>, app: &mut App, area: Rect)
 where
     B: Backend,
 {
-    let chunks = Layout::default()
-        .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
-        .direction(Direction::Horizontal)
-        .split(area);
-    let up_style = Style::default().fg(Color::Green);
-    let failure_style = Style::default()
-        .fg(Color::Red)
-        .modifier(Modifier::RAPID_BLINK | Modifier::CROSSED_OUT);
-    let header = ["Server", "Location", "Status"];
-    let rows = app.servers.iter().map(|s| {
-        let style = if s.status == "Up" {
-            up_style
-        } else {
-            failure_style
-        };
-        Row::StyledData(vec![s.name, s.location, s.status].into_iter(), style)
+    let blocked_style = Style::default().fg(Color::Red);
+    let header = ["Forum", "Status"];
+    let rows = app.filters.iter().map(|s| {
+        Row::StyledData(
+            vec![s.to_string(), "Blocked".to_string()].into_iter(),
+            blocked_style,
+        )
     });
     let table = Table::new(header.iter(), rows)
-        .block(Block::default().title("Servers").borders(Borders::ALL))
+        .block(Block::default().borders(Borders::ALL))
         .header_style(Style::default().fg(Color::Yellow))
-        .widths(&[
-            Constraint::Length(15),
-            Constraint::Length(15),
-            Constraint::Length(10),
-        ]);
-    f.render_widget(table, chunks[0]);
-
-    let map = Canvas::default()
-        .block(Block::default().title("World").borders(Borders::ALL))
-        .paint(|ctx| {
-            ctx.draw(&Map {
-                color: Color::White,
-                resolution: MapResolution::High,
-            });
-            ctx.layer();
-            ctx.draw(&Rectangle {
-                x: 0.0,
-                y: 30.0,
-                width: 10.0,
-                height: 10.0,
-                color: Color::Yellow,
-            });
-            for (i, s1) in app.servers.iter().enumerate() {
-                for s2 in &app.servers[i + 1..] {
-                    ctx.draw(&Line {
-                        x1: s1.coords.1,
-                        y1: s1.coords.0,
-                        y2: s2.coords.0,
-                        x2: s2.coords.1,
-                        color: Color::Yellow,
-                    });
-                }
-            }
-            for server in &app.servers {
-                let color = if server.status == "Up" {
-                    Color::Green
-                } else {
-                    Color::Red
-                };
-                ctx.print(server.coords.1, server.coords.0, "X", color);
-            }
-        })
-        .marker(if app.enhanced_graphics {
-            symbols::Marker::Braille
-        } else {
-            symbols::Marker::Dot
-        })
-        .x_bounds([-180.0, 180.0])
-        .y_bounds([-90.0, 90.0]);
-    f.render_widget(map, chunks[1]);
+        .widths(&[Constraint::Length(15), Constraint::Length(15)]);
+    f.render_widget(table, area);
 }
