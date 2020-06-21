@@ -153,6 +153,7 @@ impl<'a> App<'a> {
                 "Multiplayer LFG",
                 "Skins",
                 "Something Else",
+                "Medivh's Tower",
             ]
             .into_iter()
             .map(|s| s.into())
