@@ -1,4 +1,4 @@
-[![asciicast](https://asciinema.org/a/iIdw3GhXn1f1qcHh6YfnvPPyd.svg)](https://asciinema.org/a/iIdw3GhXn1f1qcHh6YfnvPPyd)
+[![asciicast](https://asciinema.org/a/tVQMk2d11rrVie1KilyFKv4He.svg)](https://asciinema.org/a/tVQMk2d11rrVie1KilyFKv4He)
 
 # Installing
 
