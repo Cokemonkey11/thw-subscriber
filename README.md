@@ -1,3 +1,5 @@
+![CI](https://github.com/Cokemonkey11/thw-subscriber/workflows/CI/badge.svg?branch=master)
+
 [![asciicast](https://asciinema.org/a/tVQMk2d11rrVie1KilyFKv4He.svg)](https://asciinema.org/a/tVQMk2d11rrVie1KilyFKv4He)
 
 # Installing

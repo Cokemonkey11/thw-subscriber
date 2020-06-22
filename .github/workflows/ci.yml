@@ -43,11 +43,11 @@ jobs:
           profile: default
           toolchain: stable
           override: true
-      - name: "Check (crossterm)"
+      - name: "Check"
         uses: actions-rs/cargo@v1
         with:
           command: check
-      - name: "Test (crossterm)"
+      - name: "Test"
         uses: actions-rs/cargo@v1
         with:
           command: test
