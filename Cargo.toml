@@ -13,7 +13,7 @@ edition = "2018"
 clipboard = "0.5"
 indexmap = "1.4"
 select = "0.4.3"
-tui = { version = "0.9.5", features = ["crossterm"]}
+tui = { version = "0.9.5", features = ["crossterm"], default-features = false }
 bitflags = "1.0"
 cassowary = "0.3"
 itertools = "0.9"

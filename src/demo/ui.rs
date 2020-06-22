@@ -139,6 +139,6 @@ where
     let table = Table::new(header.iter(), rows)
         .block(Block::default().borders(Borders::ALL))
         .header_style(Style::default().fg(Color::Yellow))
-        .widths(&[Constraint::Length(25), Constraint::Length(20)]);
+        .widths(&[Constraint::Length(30), Constraint::Length(20)]);
     f.render_widget(table, area);
 }
