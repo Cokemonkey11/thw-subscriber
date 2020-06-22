@@ -160,6 +160,8 @@ impl<'a> App<'a> {
                 "Off-Topic",
                 "Map Development",
                 "Spells",
+                "Warcraft: Ultimate Battle",
+                "Icons",
             ]
             .into_iter()
             .map(|s| s.into())
