@@ -162,6 +162,7 @@ impl<'a> App<'a> {
                 "Spells",
                 "Warcraft: Ultimate Battle",
                 "Icons",
+                "Art and Graphic Designs",
             ]
             .into_iter()
             .map(|s| s.into())
