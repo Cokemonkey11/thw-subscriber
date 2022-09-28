@@ -2,7 +2,8 @@ use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Gauge, List, Paragraph, Row, Table, Tabs, Text},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Cell, Gauge, List, ListItem, Paragraph, Row, Table, Tabs, Wrap},
     Frame,
 };
 
@@ -19,9 +20,8 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints(vec![Constraint::Length(30), Constraint::Min(10)])
         .direction(Direction::Horizontal)
         .split(chunks[0]);
-    let tabs = Tabs::default()
+    let tabs = Tabs::new(app.tabs.titles.iter().cloned().map(Spans::from).collect())
         .block(Block::default().borders(Borders::ALL).title(app.title))
-        .titles(&app.tabs.titles)
         .style(Style::default().fg(Color::Green))
         .highlight_style(Style::default().fg(Color::Yellow))
         .select(app.tabs.index);
@@ -37,9 +37,9 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             Style::default()
                 .fg(Color::Gray)
                 .bg(Color::Black)
-                .modifier(Modifier::ITALIC | Modifier::BOLD),
+                .add_modifier(Modifier::ITALIC | Modifier::BOLD),
         )
-        .label(&label)
+        .label(label)
         .ratio(app.progress);
     f.render_widget(gauge, tab_chunks[1]);
 
@@ -76,10 +76,10 @@ where
             .items
             .iter()
             .map(|dat| format!("{} :: {}", dat.forum, dat.title))
-            .map(Text::raw);
+            .map(ListItem::new).collect::<Vec<_>>();
         let tasks = List::new(tasks)
             .block(Block::default().borders(Borders::ALL).title("Topics"))
-            .highlight_style(Style::default().fg(Color::Yellow).modifier(Modifier::BOLD))
+            .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
             .highlight_symbol("> ");
         f.render_stateful_widget(tasks, chunks[0], &mut app.tasks.state);
     }
@@ -90,23 +90,24 @@ fn draw_text<B>(f: &mut Frame<B>, area: Rect, app: &mut App)
 where
     B: Backend,
 {
-    let text: Vec<Text> = match app.errors.len() {
+    let text: Vec<Spans> = match app.errors.len() {
         0 => {
-            vec![Text::raw(app.get_uri().unwrap_or_else(|| {
+            vec![Spans::from(app.get_uri().unwrap_or_else(|| {
                 "Select a thread with the arrow keys".into()
             }))]
         }
         _ => app
             .errors
             .iter()
-            .map(|str| Text::styled(str, Style::new().bg(Color::Magenta)))
+            .map(|str| Span::styled(str, Style::default().bg(Color::Magenta)))
+            .map(Spans::from)
             .collect(),
     };
 
     let block = Block::default()
         .borders(Borders::ALL)
-        .border_style(Style::new().modifier(Modifier::HIDDEN));
-    let paragraph = Paragraph::new(text.iter()).block(block).wrap(true);
+        .border_style(Style::default().add_modifier(Modifier::HIDDEN));
+    let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
 
     let chunks = Layout::default()
         .constraints([Constraint::Min(40), Constraint::Length(10)].as_ref())
@@ -114,13 +115,13 @@ where
         .split(area);
     f.render_widget(paragraph, chunks[0]);
 
-    let legend_text = vec![
-        Text::styled("Q", Style::new().modifier(Modifier::UNDERLINED)),
-        Text::raw("uit\n"),
-        Text::styled("C", Style::new().modifier(Modifier::UNDERLINED)),
-        Text::raw("opy url\n"),
-    ];
-    let legend = Paragraph::new(legend_text.iter()).block(Block::default().borders(Borders::ALL));
+    let legend_text: Vec<_> = vec![
+        Span::styled("Q", Style::default().add_modifier(Modifier::UNDERLINED)),
+        Span::raw("uit\n"),
+        Span::styled("C", Style::default().add_modifier(Modifier::UNDERLINED)),
+        Span::raw("opy url\n"),
+    ].into_iter().map(Spans::from).collect();
+    let legend = Paragraph::new(legend_text).block(Block::default().borders(Borders::ALL));
     f.render_widget(legend, chunks[1]);
 }
 
@@ -131,14 +132,13 @@ where
     let blocked_style = Style::default().fg(Color::Red);
     let header = ["Forum", "Status"];
     let rows = app.filters.iter().map(|s| {
-        Row::StyledData(
-            vec![s.to_string(), "Blocked".to_string()].into_iter(),
-            blocked_style,
+        Row::new(
+            vec![Cell::from(s.to_string()).style(blocked_style), Cell::from("Blocked".to_string()).style(blocked_style)].into_iter(),
         )
     });
-    let table = Table::new(header.iter(), rows)
+    let table = Table::new(rows)
+        .header(Row::new(header).style(Style::default().fg(Color::Yellow)))
         .block(Block::default().borders(Borders::ALL))
-        .header_style(Style::default().fg(Color::Yellow))
         .widths(&[Constraint::Length(30), Constraint::Length(20)]);
     f.render_widget(table, area);
 }
