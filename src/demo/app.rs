@@ -1,10 +1,9 @@
 use crate::util::{RandomSignal, SinSignal, StatefulList, TabsState};
 
-use std::error::Error;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-use clipboard::{ClipboardContext, ClipboardProvider};
+use arboard::Clipboard;
 
 pub struct Signal<S: Iterator> {
     source: S,
@@ -206,10 +205,10 @@ impl<'a> App<'a> {
             }
             'c' => {
                 if let Some(uri) = self.get_uri() {
-                    let cb: Result<ClipboardContext, Box<dyn Error>> = ClipboardProvider::new();
+                    let cb = Clipboard::new();
                     match cb {
                         Ok(mut cb) => {
-                            cb.set_contents(uri).expect("failed to set clipboard");
+                            cb.set_text(uri).expect("failed to set clipboard");
                         }
                         Err(e) => {
                             self.errors.push(format!("{:?} - {:?}\n", e, e.to_string()));
