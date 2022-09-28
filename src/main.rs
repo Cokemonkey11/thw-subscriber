@@ -15,7 +15,7 @@ use select::predicate::{Class, Predicate};
 
 use std::{
     error::Error,
-    io::{stdout, Write},
+    io::stdout,
     sync::mpsc,
     thread,
     time::{Duration, Instant},

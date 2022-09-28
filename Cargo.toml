@@ -21,7 +21,7 @@ either = "1.5"
 unicode-segmentation = "1.2"
 unicode-width = "0.1"
 ureq = "1.2"
-crossterm = "0.17"
+crossterm = "0.25"
 serde = { version = "1", "optional" = true, features = ["derive"]}
 rand = "0.7"
 argh = "0.1"
