@@ -222,7 +222,7 @@ impl<'a> App<'a> {
 
     pub fn on_tick(&mut self) {
         self.progress =
-            (Instant::now() - (self.next_update - Duration::from_secs(60))).as_secs() as f64 / 60.0;
+            (Instant::now() - self.next_update.checked_sub(Duration::from_secs(60)).unwrap()).as_secs() as f64 / 60.0;
         if self.progress >= 1.0 {
             self.next_update = Instant::now() + Duration::from_secs(60);
             self.progress = 0.0;
