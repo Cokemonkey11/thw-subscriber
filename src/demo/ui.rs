@@ -76,10 +76,15 @@ where
             .items
             .iter()
             .map(|dat| format!("{} :: {}", dat.forum, dat.title))
-            .map(ListItem::new).collect::<Vec<_>>();
+            .map(ListItem::new)
+            .collect::<Vec<_>>();
         let tasks = List::new(tasks)
             .block(Block::default().borders(Borders::ALL).title("Topics"))
-            .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+            .highlight_style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            )
             .highlight_symbol("> ");
         f.render_stateful_widget(tasks, chunks[0], &mut app.tasks.state);
     }
@@ -120,7 +125,10 @@ where
         Span::raw("uit\n"),
         Span::styled("C", Style::default().add_modifier(Modifier::UNDERLINED)),
         Span::raw("opy url\n"),
-    ].into_iter().map(Spans::from).collect();
+    ]
+    .into_iter()
+    .map(Spans::from)
+    .collect();
     let legend = Paragraph::new(legend_text).block(Block::default().borders(Borders::ALL));
     f.render_widget(legend, chunks[1]);
 }
@@ -133,7 +141,11 @@ where
     let header = ["Forum", "Status"];
     let rows = app.filters.iter().map(|s| {
         Row::new(
-            vec![Cell::from(s.to_string()).style(blocked_style), Cell::from("Blocked".to_string()).style(blocked_style)].into_iter(),
+            vec![
+                Cell::from(s.to_string()).style(blocked_style),
+                Cell::from("Blocked".to_string()).style(blocked_style),
+            ]
+            .into_iter(),
         )
     });
     let table = Table::new(rows)
